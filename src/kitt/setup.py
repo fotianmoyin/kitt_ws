@@ -10,6 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/images', ['resource/images/model.png']),#拷贝汽车图片到共享目录
     ],
     install_requires=['setuptools'],
     zip_safe=True,

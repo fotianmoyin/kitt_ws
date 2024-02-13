@@ -16,6 +16,9 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/kitt/kitt/car.py",
+            "args": [
+                "--debug"
+            ],
             "console": "integratedTerminal",
             "justMyCode": true,
         },
