@@ -1,0 +1,15 @@
+{
+    "ros.distro": "humble",
+    "python.autoComplete.extraPaths": [
+        "/home/fotianmoyin/Projects/vscode/kitt/install/kitt/lib/python3.10/site-packages",
+        "/home/fotianmoyin/Projects/vscode/kitt/install/inters/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/fotianmoyin/Projects/vscode/kitt/install/kitt/lib/python3.10/site-packages",
+        "/home/fotianmoyin/Projects/vscode/kitt/install/inters/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}
