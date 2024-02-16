@@ -44,8 +44,10 @@ def run_as_debug() -> bool:
 
 if run_as_debug():
     from car_part.model import Model
+    from car_part.map import Map
 else:
     from kitt.car_part.model import Model
+    from kitt.car_part.map import Map
 
 class Car:
     def __init__(self) -> None:
@@ -61,7 +63,10 @@ class Car:
         self.win = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
         # 设置窗口标题
         pygame.display.set_caption("Car")
+        self.world_x = float(0)  # 车世界坐标x
+        self.world_y = float(0)  # 车世界坐标y
         self.model = Model(self)
+        self.map = Map(self)
         pass
 
     def run(self):
@@ -81,9 +86,51 @@ class Car:
         color = (150, 150, 150)
         # 给窗口填充背景色
         self.win.fill(color=color)
+        # 更新地图
+        self.map.update()
+        # 更新汽车模型
         self.model.update()
         # 让最近绘制的窗口可见
         pygame.display.flip()
+
+    def winx_to_worldx(self, win_x: int) -> int:
+        """
+        窗口坐标x转换为世界坐标x
+        参数：
+            win_x：窗口坐标x
+        返回：
+            世界坐标x
+        """
+        win_width = self.win.get_rect().width
+        world_left = int(self.world_x - win_width / 2)
+        world_x = world_left + win_x
+        return world_x
+
+    def winy_to_worldy(self, win_y) -> int:
+        """
+        窗口坐标y转换为世界坐标y
+        参数：
+            win_y：窗口坐标y
+        返回：
+            世界坐标y
+        """
+        win_height = self.win.get_rect().height
+        world_top = int(self.world_y + win_height / 2)
+        world_y = world_top + win_y
+        return world_y
+
+    def win_rect_to_world_rect(self, win_rect) -> pygame.Rect:
+        """
+        窗口坐标矩形转换为世界坐标矩形
+        参数：
+            win_rect：窗口坐标矩形
+        返回：
+            世界坐标矩形
+        """
+        world_x = self.winx_to_worldx(win_rect.x)
+        world_y = self.winy_to_worldy(win_rect.y)
+        world_rect = pygame.Rect(world_x, world_y, win_rect.width, win_rect.height)
+        return world_rect
 
 def main():
     """创建模拟器，并运行"""
