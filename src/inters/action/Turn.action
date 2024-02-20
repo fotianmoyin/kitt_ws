@@ -1,0 +1,8 @@
+int32 direction # 目标方向（0：左；1：右）
+float32 angle # 目标角度
+---
+float32 angle # 目标最终角度
+float32 world_angle # 目标最终世界角度
+---
+float32 angle # 目标当前角度
+float32 world_angle # 目标当前世界角度

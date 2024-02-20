@@ -24,11 +24,12 @@ class Model:
         )
 
     def update(self):
+        model_image = pygame.transform.rotate(self.model_image, -self.car.world_angle)
         # 获取图片尺寸
-        model_rect = self.model_image.get_rect()
+        model_rect = model_image.get_rect()
         # 获取窗口尺寸，让图片居中显示
         win_rect = self.win.get_rect()
         model_rect.x = (win_rect.width - model_rect.width) / 2
         model_rect.y = (win_rect.height - model_rect.height) / 2
         # 在窗口的指定位置上绘制图片
-        self.win.blit(self.model_image, model_rect)
+        self.win.blit(model_image, model_rect)

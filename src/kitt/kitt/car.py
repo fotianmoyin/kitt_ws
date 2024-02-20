@@ -3,6 +3,13 @@ import sys
 import os
 import getopt
 from ament_index_python.packages import get_package_share_directory
+import rclpy
+from rclpy.action import ActionServer
+from rclpy.node import Node
+import math
+import time
+from inters.action import Turn
+from threading import Thread
 
 def run_as_debug() -> bool:
     """
@@ -52,6 +59,11 @@ else:
 class Car:
     def __init__(self) -> None:
         """初始化窗口并加载显示资源"""
+
+        # 将启动ROS服务节点的任务放到单独的线程中，这样可以避免pygame和rclpy会分别阻塞的问题
+        self.thd_srv = Thread(target=self.start_srv)
+        self.thd_srv.start()
+
         pygame.init()
 
         if run_as_debug():
@@ -63,11 +75,20 @@ class Car:
         self.win = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
         # 设置窗口标题
         pygame.display.set_caption("Car")
+        self.world_angle = float(0)  # 车世界角度
         self.world_x = float(0)  # 车世界坐标x
         self.world_y = float(0)  # 车世界坐标y
         self.model = Model(self)
         self.map = Map(self)
         pass
+
+    def start_srv(self):
+        """启动ROS节点服务"""
+        rclpy.init()
+        self.car_srv = CarSrv("car", self)
+        rclpy.spin(self.car_srv)
+        self.car_srv.destroy_node()
+        rclpy.try_shutdown()
 
     def run(self):
         """运行模拟器"""
@@ -79,6 +100,7 @@ class Car:
         """监视键盘、鼠标事件"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                rclpy.try_shutdown()
                 sys.exit()
 
     def _update_win(self):
@@ -92,6 +114,28 @@ class Car:
         self.model.update()
         # 让最近绘制的窗口可见
         pygame.display.flip()
+
+    def set_angle(self, angle):
+        self.world_angle = angle
+
+    def turn(self, direction, angle):
+        """
+        转向\n
+        参数：
+            direction：方向（0：向左；1：向右）\n
+            angle：角度
+        返回：
+            车当前的角度
+        """
+        old_angle = self.world_angle
+        if direction == 0:
+            old_angle -= angle
+        if direction == 1:
+            old_angle += angle
+
+        self.set_angle(old_angle % 360)
+
+        return self.world_angle
 
     def winx_to_worldx(self, win_x: int) -> int:
         """
@@ -131,6 +175,50 @@ class Car:
         world_y = self.winy_to_worldy(win_rect.y)
         world_rect = pygame.Rect(world_x, world_y, win_rect.width, win_rect.height)
         return world_rect
+    
+class CarSrv(Node):
+    """模拟器服务节点"""
+    def __init__(self, node_name, car: Car):
+        super().__init__(node_name)
+        self.car = car
+        # 转向动作服务
+        self._turn_action_server = ActionServer(
+            self, Turn, "/car/turn", self.turn_callback
+        )
+        
+
+    def turn_callback(self, goal_handle):
+        self.get_logger().info("Executing turn goal...")
+
+        feedback_msg = Turn.Feedback()
+
+        angle = goal_handle.request.angle
+        iangle = math.floor(angle)  # 整数部分
+        for i in range(1, iangle + 1):
+            feedback_msg.world_angle = self.car.turn(goal_handle.request.direction, 1)
+            feedback_msg.angle = float(i)
+            self.get_logger().info(
+                f"/car/turn feedback: ({feedback_msg.angle:.2f},{feedback_msg.world_angle:.2f})"
+            )
+            goal_handle.publish_feedback(feedback_msg)
+            time.sleep(0.01)
+
+        dangle = angle % 1  # 小数部分
+        if dangle != 0:
+            feedback_msg.world_angle = self.car.turn(
+                goal_handle.request.direction, dangle
+            )
+            feedback_msg.angle = dangle
+            self.get_logger().info(
+                f"/car/turn feedback: ({feedback_msg.angle:.2f},{feedback_msg.world_angle:.2f})"
+            )
+            goal_handle.publish_feedback(feedback_msg)
+
+        goal_handle.succeed()
+        result = Turn.Result()
+        result.angle = feedback_msg.angle
+        result.world_angle = feedback_msg.world_angle
+        return result
 
 def main():
     """创建模拟器，并运行"""
